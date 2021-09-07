@@ -2,8 +2,9 @@
 // Additionally, upon implementing FromStr, you can use the `parse` method
 // on strings to generate an object of the implementor type.
 // You can read more about it at https://doc.rust-lang.org/std/str/trait.FromStr.html
-use std::error;
+use std::error::Error;
 use std::str::FromStr;
+use std::{error, fmt};
 
 #[derive(Debug)]
 struct Person {
@@ -11,7 +12,37 @@ struct Person {
     age: usize,
 }
 
-// I AM NOT DONE
+#[derive(Debug, PartialEq)]
+struct Color {
+    red: u8,
+    green: u8,
+    blue: u8,
+}
+
+#[derive(Debug)]
+struct MyError {
+    details: String,
+}
+
+impl MyError {
+    fn new(msg: &str) -> MyError {
+        MyError {
+            details: msg.to_string(),
+        }
+    }
+}
+
+impl fmt::Display for MyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl Error for MyError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
 
 // Steps:
 // 1. If the length of the provided string is 0, an error should be returned
@@ -26,6 +57,27 @@ struct Person {
 impl FromStr for Person {
     type Err = Box<dyn error::Error>;
     fn from_str(s: &str) -> Result<Person, Self::Err> {
+        if s.len() == 0 {
+            return Err(Box::new(MyError {
+                details: "The name cannot be empty.".to_string(),
+            }));
+        }
+
+        let strings: Vec<&str> = s.split(",").collect();
+        if strings.len() != 2 || strings[0].len() == 0 || strings[1].len() == 0 {
+            return Err(Box::new(MyError {
+                details: "Illegal input.".to_string(),
+            }));
+        }
+
+        let name = strings[0].to_string();
+        if let Ok(age) = strings[1].parse::<usize>() {
+            Ok(Person { name, age })
+        } else {
+            return Err(Box::new(MyError {
+                details: "Illegal age.".to_string(),
+            }));
+        }
     }
 }
 
